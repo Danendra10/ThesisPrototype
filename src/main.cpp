@@ -2,72 +2,101 @@
 
 int main()
 {
-    const int TOTAL_ = 400;
-    const int stepSize = 32;
-    const float maxVel = 100.0f;
-    const float Kattr = 1.0f;
-    const float Krepl = 10000000.0f;
-    const float d0 = 50.0f;
-    const float a = 1.0f; // parabolic curvature of the attractive potential
-    const float b = 1.0f; // parabolic curvature of the attractive potential
+    namedWindow("Parameters", WINDOW_AUTOSIZE);
+    createTrackbar("Step Size", "Parameters", &stepSize, 100, OnUpdate);
+    createTrackbar("Max Velocity", "Parameters", &maxVel, 200, OnUpdate);
+    createTrackbar("Kattr", "Parameters", &Kattr, 1000, OnUpdate);
+    createTrackbar("Krepl", "Parameters", &Krepl, 100000000, OnUpdate);
+    createTrackbar("Repulsive Radius", "Parameters", &d0, 400, OnUpdate);
+    createTrackbar("a", "Parameters", &a, 10, OnUpdate);
+    createTrackbar("b", "Parameters", &b, 10, OnUpdate);
+    createTrackbar("Ball speed", "Parameters", &ball_speed, 100, OnUpdate);
 
-    // Initialize goal
-    Point2f goal(TOTAL_ * 0.5, TOTAL_ * 0.5);
-
-    // Define obstacles
-    vector<Point2f> obstacles = {
-        {50, 50}, {300, 300}, {500, 700}, {700, 700}, {800, 1000}};
-
-    // Initialize forces
-    Attractive::Force attractive_force;
-    attractive_force.Init(Kattr, a, b, TOTAL_);
-
-    Repulsive::Force repulsive_force;
+    attractive_force.Init(Kattr, a, b, 300);
     repulsive_force.Init(Krepl, d0);
-
-    // Initialize force matrices
-    Mat f_attr_x(Size(TOTAL_ + 1, TOTAL_ + 1), CV_32F, Scalar(0));
-    Mat f_attr_y(Size(TOTAL_ + 1, TOTAL_ + 1), CV_32F, Scalar(0));
-    Mat f_rep_x(Size(TOTAL_ + 1, TOTAL_ + 1), CV_32F, Scalar(0));
-    Mat f_rep_y(Size(TOTAL_ + 1, TOTAL_ + 1), CV_32F, Scalar(0));
-
-    for (int i = 0; i <= TOTAL_; i += stepSize)
-    {
-        for (int j = 0; j <= TOTAL_; j += stepSize)
-        {
-            // Current position
-            float x_curr = i;
-            float y_curr = j;
-
-            // Calculate attractive force
-            float f_x_attr, f_y_attr;
-            attractive_force.Update(x_curr, y_curr, goal.x, goal.y, maxVel, f_x_attr, f_y_attr);
-            f_attr_x.at<float>(i, j) = f_x_attr;
-            f_attr_y.at<float>(i, j) = f_y_attr;
-
-            // Calculate repulsive force from each obstacle
-            float f_x_rep_total = 0, f_y_rep_total = 0;
-            for (const auto &obstacle : obstacles)
-            {
-                float f_x_rep, f_y_rep;
-                repulsive_force.Update(x_curr, y_curr, obstacle.x, obstacle.y, f_x_rep, f_y_rep);
-                f_x_rep_total += f_x_rep;
-                f_y_rep_total += f_y_rep;
-            }
-            f_rep_x.at<float>(i, j) = f_x_rep_total;
-            f_rep_y.at<float>(i, j) = f_y_rep_total;
-        }
-    }
 
     while (true)
     {
-        visualizeVectorField(f_attr_x + f_rep_x, f_attr_y + f_rep_y, obstacles, goal);
-        // Display();
+        // visualizeVectorField(f_attr_x, f_attr_y, obstacles, goal);
+        int key = cv::waitKey(1);
+        if (key == 'q')
+        {
+            break;
+        }
+        else if (key == 'w') // Move up
+        {
+            ball.y = fmaxf(0, ball.y - ball_speed);
+        }
+        else if (key == 's') // Move down
+        {
+            ball.y = fminf(Y_FIELD, ball.y + ball_speed);
+        }
+        else if (key == 'a') // Move left
+        {
+            ball.x = fmaxf(0, ball.x - ball_speed);
+        }
+        else if (key == 'd') // Move right
+        {
+            logger_instance.Log(logger::GREEN, "Moving right");
+            ball.x = fminf(X_FIELD, ball.x + ball_speed);
+        }
+
+        // After moving the ball, redraw the scene with updated ball position
+        main_frame = Scalar::all(0); // Clear the frame or set to your background
+
+        // Draw the obstacles and ball again with updated position
+        for (const auto &obstacle : obstacles)
+        {
+            circle(main_frame, obstacle, 10, Scalar(0, 0, 255), -1); // Draw obstacles
+        }
+        circle(main_frame, ball, 10, Scalar(255, 255, 0), -1); // Draw ball with updated position
+
+        for (int i = 0; i <= X_FIELD; i += stepSize)
+        {
+            for (int j = 0; j <= Y_FIELD; j += stepSize)
+            {
+                // Current position
+                float x_curr = i;
+                float y_curr = j;
+
+                // Calculate attractive force
+                float f_x_attr, f_y_attr;
+                attractive_force.Update(x_curr, y_curr, ball.x, ball.y, maxVel, f_x_attr, f_y_attr);
+                f_attr_x.at<float>(i, j) = f_x_attr;
+                f_attr_y.at<float>(i, j) = f_y_attr;
+
+                // Calculate repulsive force from each obstacle
+                float f_x_rep_total = 0, f_y_rep_total = 0;
+                for (const auto &obstacle : obstacles)
+                {
+                    float f_x_rep, f_y_rep;
+                    repulsive_force.Update(x_curr, y_curr, obstacle.x, obstacle.y, f_x_rep, f_y_rep);
+                    f_x_rep_total += f_x_rep;
+                    f_y_rep_total += f_y_rep;
+                }
+                f_rep_x.at<float>(i, j) = f_x_rep_total;
+                f_rep_y.at<float>(i, j) = f_y_rep_total;
+
+                // Total force
+                float f_x_total = f_attr_x.at<float>(i, j) + f_rep_x.at<float>(i, j);
+                float f_y_total = f_attr_y.at<float>(i, j) + f_rep_y.at<float>(i, j);
+
+                f_total_x.at<float>(i, j) = f_x_total;
+                f_total_y.at<float>(i, j) = f_y_total;
+
+                line(main_frame, Point(i, j), Point(i + f_x_total, j + f_y_total), Scalar(0, 255, 0), 1);
+            }
+        }
+
+        Display();
         if (cv::waitKey(1) == 'q')
         {
             break;
         }
     }
+
+    destroyAllWindows();
+    return 0;
 }
 
 void Display()
@@ -110,5 +139,12 @@ void visualizeVectorField(const Mat &field_x, const Mat &field_y, const vector<P
 
     // Show the image
     imshow("Vector Field", display);
-    waitKey(0); // Wait for a key press to exit
+}
+
+void OnUpdate(int, void *)
+{
+    // clear the frame
+    main_frame = Mat(Y_FIELD, X_FIELD, CV_8UC3, Scalar(0, 0, 0));
+    attractive_force.Init(Kattr, a, b, 300);
+    repulsive_force.Init(Krepl, d0);
 }
