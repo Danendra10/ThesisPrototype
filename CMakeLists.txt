@@ -13,3 +13,6 @@ include_directories(
 
 add_executable(main src/main.cpp)
 target_link_libraries(main ${OpenCV_LIBS})
+
+add_executable(positioning src/positioning.cpp)
+target_link_libraries(positioning ${OpenCV_LIBS})

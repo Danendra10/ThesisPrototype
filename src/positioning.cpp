@@ -1,4 +1,4 @@
-#include <simple_example/main.hpp>
+#include <simple_example/positioning.hpp>
 
 int main()
 {
@@ -43,10 +43,10 @@ int main()
         // After moving the ball, redraw the scene with updated ball position
         main_frame = Scalar::all(0); // Clear the frame or set to your background
 
-        float highest_force_x = 0;
-        float highest_force_y = 0;
-        float highest_force_x_idx = 0;
-        float highest_force_y_idx = 0;
+        float least_force_x = __FLT_MAX__;
+        float least_force_y = __FLT_MAX__;
+        float least_force_x_idx = __FLT_MAX__;
+        float least_force_y_idx = __FLT_MAX__;
 
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -77,6 +77,15 @@ int main()
                 }
                 circle(main_frame, ball, 10, CV_BLUE, -1); // Draw ball with updated position
 
+                // logger_instance.Log(logger::YELLOW, "X %f Y %f IsOutsideRobotMaxRadius: %f", x_curr, y_curr, sqrt(pow(x_curr - robot_pose.x, 2) + pow(y_curr - robot_pose.y, 2)));
+                if (IsOutsideRobotMaxRadius(x_curr, y_curr))
+                    continue;
+
+                if (robot_pose.x <= X_FIELD_1_2 && x_curr <= robot_pose.x)
+                    continue;
+                if (robot_pose.x <= X_FIELD_1_4 && x_curr <= X_FIELD_1_4)
+                    continue;
+
                 uint8_t is_in_obstacle_zone = 0;
                 for (const auto &obstacle : obstacles)
                 {
@@ -97,10 +106,6 @@ int main()
                 if (is_in_obstacle_zone)
                     continue;
 
-                if (sqrt(pow((x_curr - friend_pose.x), 2) + pow((y_curr - friend_pose.y), 2)) <= min_receiver_rad ||
-                    sqrt(pow((x_curr - friend_pose.x), 2) + pow((y_curr - friend_pose.y), 2)) >= max_receiver_rad)
-                    continue;
-
                 f_rep_x.at<float>(i, j) = f_x_rep_total;
                 f_rep_y.at<float>(i, j) = f_y_rep_total;
 
@@ -111,12 +116,12 @@ int main()
                 f_total_x.at<float>(i, j) = f_x_total;
                 f_total_y.at<float>(i, j) = f_y_total;
 
-                if (abs(f_x_total) > abs(highest_force_x) && abs(f_y_total) > abs(highest_force_y))
+                if (abs(f_x_total) <= abs(least_force_x) && abs(f_y_total) <= abs(least_force_y) && sqrt(pow(x_curr - robot_pose.x, 2) + pow(y_curr - robot_pose.y, 2)) > max_robot_movement_radius - 100)
                 {
-                    highest_force_x = f_x_total;
-                    highest_force_x_idx = i;
-                    highest_force_y = f_y_total;
-                    highest_force_y_idx = j;
+                    least_force_x = f_x_total;
+                    least_force_x_idx = i;
+                    least_force_y = f_y_total;
+                    least_force_y_idx = j;
                 }
 
                 line(main_frame, Point(i, j), Point(i + f_x_total, j + f_y_total), Scalar(0, 255, 0), 1);
@@ -127,16 +132,16 @@ int main()
 
         std::chrono::duration<double> duration = end - start;
 
-        logger_instance.Log(logger::BLUE, "Step Size %d Duration: %s Total possible points %d", stepSize, std::to_string(duration.count()).c_str(), total_possible_points);
+        // logger_instance.Log(logger::BLUE, "Step Size %d Duration: %s Total possible points %d", stepSize, std::to_string(duration.count()).c_str(), total_possible_points);
 
-        circle(main_frame, Point2d(highest_force_x_idx, highest_force_y_idx), 10, CV_WHITE, -1);
-        line(main_frame, Point2d(robot_pose.x, robot_pose.y), Point2d(highest_force_x_idx, highest_force_y_idx), CV_WHITE, 1);
+        circle(main_frame, Point2d(least_force_x_idx, least_force_y_idx), 10, CV_WHITE, -1);
+        line(main_frame, Point2d(robot_pose.x, robot_pose.y), Point2d(least_force_x_idx, least_force_y_idx), CV_WHITE, 1);
 
         // text on top
         putText(main_frame, "Current position: " + to_string(robot_pose.x) + ", " + to_string(robot_pose.y), Point(10, 20), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
         putText(main_frame, "Friend position: " + to_string(friend_pose.x) + ", " + to_string(friend_pose.y), Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
-        putText(main_frame, "Pass point: " + to_string(highest_force_x_idx) + ", " + to_string(highest_force_y_idx), Point(10, 60), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
-        if (!highest_force_x_idx && !highest_force_y_idx)
+        putText(main_frame, "Pass point: " + to_string(least_force_x_idx) + ", " + to_string(least_force_y_idx), Point(10, 60), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
+        if (!least_force_x_idx && !least_force_y_idx)
             putText(main_frame, "CAN`T PAST", Point(500, 20), FONT_HERSHEY_SIMPLEX, 0.5, CV_RED, 1);
         else
             putText(main_frame, "ABLE TO PASS", Point(500, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);

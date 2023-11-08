@@ -31,7 +31,8 @@ void meshgrid(const double step_size, const double total, std::vector<std::vecto
 
 bool CheckLineCircleIntersection2(float x1, float y1, float x2, float y2, float cx, float cy, float r)
 {
-    float dist = std::abs((y2 - y1) * cx - (x2 - x1) * cy + x2 * y1 - y2 * x1) / std::sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
+    float dist = std::abs((y2 - y1) * cx - (x2 - x1) * cy + x2 * y1 - y2 * x1) /
+                 std::sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
 
     if (dist <= r)
     {
