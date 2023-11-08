@@ -10,7 +10,7 @@ int main()
     createTrackbar("Repulsive Radius", "Parameters", &d0, 400, OnUpdate);
     createTrackbar("a", "Parameters", &a, 10, OnUpdate);
     createTrackbar("b", "Parameters", &b, 10, OnUpdate);
-    createTrackbar("Ball speed", "Parameters", &ball_speed, 100, OnUpdate);
+    createTrackbar("Ball speed", "Parameters", &_speed, 100, OnUpdate);
 
     attractive_force.Init(Kattr, a, b, 300);
     repulsive_force.Init(Krepl, d0);
@@ -25,20 +25,19 @@ int main()
         }
         else if (key == 'w') // Move up
         {
-            ball.y = fmaxf(0, ball.y - ball_speed);
+            robot_pose.y = fmaxf(0, robot_pose.y - _speed);
         }
         else if (key == 's') // Move down
         {
-            ball.y = fminf(Y_FIELD, ball.y + ball_speed);
+            robot_pose.y = fminf(Y_FIELD, robot_pose.y + _speed);
         }
         else if (key == 'a') // Move left
         {
-            ball.x = fmaxf(0, ball.x - ball_speed);
+            robot_pose.x = fmaxf(0, robot_pose.x - _speed);
         }
         else if (key == 'd') // Move right
         {
-            logger_instance.Log(logger::GREEN, "Moving right");
-            ball.x = fminf(X_FIELD, ball.x + ball_speed);
+            robot_pose.x = fminf(X_FIELD, robot_pose.x + _speed);
         }
 
         // After moving the ball, redraw the scene with updated ball position
@@ -49,7 +48,12 @@ int main()
         {
             circle(main_frame, obstacle, 10, Scalar(0, 0, 255), -1); // Draw obstacles
         }
-        circle(main_frame, ball, 10, Scalar(255, 255, 0), -1); // Draw ball with updated position
+        circle(main_frame, ball, 10, CV_BLUE, -1); // Draw ball with updated position
+
+        float highest_force_x = 0;
+        float highest_force_y = 0;
+        float highest_force_x_idx = 0;
+        float highest_force_y_idx = 0;
 
         for (int i = 0; i <= X_FIELD; i += stepSize)
         {
@@ -61,19 +65,46 @@ int main()
 
                 // Calculate attractive force
                 float f_x_attr, f_y_attr;
-                attractive_force.Update(x_curr, y_curr, ball.x, ball.y, maxVel, f_x_attr, f_y_attr);
+                attractive_force.Update(x_curr, y_curr, friend_pose.x, friend_pose.y, maxVel, f_x_attr, f_y_attr);
+
                 f_attr_x.at<float>(i, j) = f_x_attr;
                 f_attr_y.at<float>(i, j) = f_y_attr;
 
                 // Calculate repulsive force from each obstacle
                 float f_x_rep_total = 0, f_y_rep_total = 0;
+
+                uint8_t is_in_obstacle_zone = 0;
                 for (const auto &obstacle : obstacles)
                 {
+                    // when the current
+                    if (sqrt((x_curr - obstacle.x) * (x_curr - obstacle.x) + (y_curr - obstacle.y) * (y_curr - obstacle.y)) < exclude_radius_around_obstacles)
+                    {
+                        is_in_obstacle_zone = 1;
+                        break;
+                    }
+
+                    if (CheckLineCircleIntersection2(x_curr, y_curr, robot_pose.x, robot_pose.y, obstacle.x, obstacle.y, exclude_radius_around_obstacles))
+                    {
+                        // logger_instance.Log(logger::RED, "In obstacle zone %f %f", x_curr, y_curr);
+                        is_in_obstacle_zone = 1;
+                        break;
+                    }
+
                     float f_x_rep, f_y_rep;
                     repulsive_force.Update(x_curr, y_curr, obstacle.x, obstacle.y, f_x_rep, f_y_rep);
                     f_x_rep_total += f_x_rep;
                     f_y_rep_total += f_y_rep;
                 }
+
+                if (is_in_obstacle_zone)
+                    continue;
+
+                float min_receiver_rad = robot_radius + restricted_min_passing_areas_friend;
+                float max_receiver_rad = robot_radius + restricted_max_passing_areas_friend;
+                if (sqrt(pow((x_curr - friend_pose.x), 2) + pow((y_curr - friend_pose.y), 2)) <= min_receiver_rad ||
+                    sqrt(pow((x_curr - friend_pose.x), 2) + pow((y_curr - friend_pose.y), 2)) >= max_receiver_rad)
+                    continue;
+
                 f_rep_x.at<float>(i, j) = f_x_rep_total;
                 f_rep_y.at<float>(i, j) = f_y_rep_total;
 
@@ -84,9 +115,29 @@ int main()
                 f_total_x.at<float>(i, j) = f_x_total;
                 f_total_y.at<float>(i, j) = f_y_total;
 
+                if (f_x_total > highest_force_x && f_y_total > highest_force_y)
+                {
+                    highest_force_x = f_x_total;
+                    highest_force_x_idx = i;
+                    highest_force_y = f_y_total;
+                    highest_force_y_idx = j;
+                }
+
                 line(main_frame, Point(i, j), Point(i + f_x_total, j + f_y_total), Scalar(0, 255, 0), 1);
             }
         }
+
+        circle(main_frame, Point2d(highest_force_x_idx, highest_force_y_idx), 10, CV_WHITE, -1);
+        line(main_frame, Point2d(robot_pose.x, robot_pose.y), Point2d(highest_force_x_idx, highest_force_y_idx), CV_WHITE, 1);
+
+        // text on top
+        putText(main_frame, "Current position: " + to_string(robot_pose.x) + ", " + to_string(robot_pose.y), Point(10, 20), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
+        putText(main_frame, "Friend position: " + to_string(friend_pose.x) + ", " + to_string(friend_pose.y), Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
+        putText(main_frame, "Pass point: " + to_string(highest_force_x_idx) + ", " + to_string(highest_force_y_idx), Point(10, 60), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
+        if (!highest_force_x_idx && !highest_force_y_idx)
+            putText(main_frame, "CAN`T PAST", Point(500, 20), FONT_HERSHEY_SIMPLEX, 0.5, CV_RED, 1);
+        else
+            putText(main_frame, "ABLE TO PASS", Point(500, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
 
         Display();
         if (cv::waitKey(1) == 'q')
@@ -101,6 +152,8 @@ int main()
 
 void Display()
 {
+    DrawTriangle(main_frame, robot_pose.x, robot_pose.y, 10, CV_MAGENTA);
+    DrawTriangle(main_frame, friend_pose.x, friend_pose.y, 10, CV_MAGENTA);
     imshow("Display", main_frame);
 }
 
@@ -147,4 +200,25 @@ void OnUpdate(int, void *)
     main_frame = Mat(Y_FIELD, X_FIELD, CV_8UC3, Scalar(0, 0, 0));
     attractive_force.Init(Kattr, a, b, 300);
     repulsive_force.Init(Krepl, d0);
+}
+
+void DrawTriangle(Mat &frame, const float center_x, const float center_y, const float radius, const Scalar color)
+{
+    int x1 = center_x - radius;
+    int y1 = center_y - radius;
+    int x2 = center_x;
+    int y2 = center_y + radius;
+    int x3 = center_x + radius;
+    int y3 = center_y - radius;
+
+    // Define the vertices of the triangle
+    vector<Point> vertices = {Point(x1, y1), Point(x2, y2), Point(x3, y3)};
+
+    // Fill the triangle with the specified color
+    fillPoly(frame, vector<vector<Point>>{vertices}, color);
+
+    // Draw the outline of the triangle
+    line(frame, Point(x1, y1), Point(x2, y2), Scalar(0, 0, 0), 1);
+    line(frame, Point(x2, y2), Point(x3, y3), Scalar(0, 0, 0), 1);
+    line(frame, Point(x3, y3), Point(x1, y1), Scalar(0, 0, 0), 1);
 }

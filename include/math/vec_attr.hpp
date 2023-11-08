@@ -1,5 +1,5 @@
 #include <math.h>
-
+#include <stdio.h>
 namespace Attractive
 {
     class Force
@@ -45,8 +45,6 @@ namespace Attractive
 
     void Force::Update(float x_curr, float y_curr, float x_goal, float y_goal, float max_vel, float &f_x, float &f_y)
     {
-        // when the xcurr is 0 and ycurr 224 and the x goal is 200, the y goal is 200
-        // the dist to goal is
         float dist_to_goal = sqrt((x_curr - x_goal) * (x_curr - x_goal) + (y_curr - y_goal) * (y_curr - y_goal));
 
         if (dist_to_goal < threshold_distance)
