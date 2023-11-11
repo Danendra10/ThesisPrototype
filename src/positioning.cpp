@@ -40,6 +40,7 @@ int main()
             robot_pose.x = fminf(X_FIELD, robot_pose.x + _speed);
         }
 
+        auto start = std::chrono::high_resolution_clock::now();
         // After moving the ball, redraw the scene with updated ball position
         main_frame = Scalar::all(0); // Clear the frame or set to your background
 
@@ -48,36 +49,30 @@ int main()
         float least_force_x_idx = __FLT_MAX__;
         float least_force_y_idx = __FLT_MAX__;
 
-        auto start = std::chrono::high_resolution_clock::now();
-
         uint16_t total_possible_points = 0;
+        uint8_t robot_able_to_shoot = 0;
 
+        for (const auto &obstacle : obstacles)
+        {
+            circle(main_frame, obstacle, 10, Scalar(0, 0, 255), -1); // Draw obstacles
+        }
+        circle(main_frame, ball, 10, CV_BLUE, -1); // Draw ball with updated position
+
+        if (robot_pose.x >= X_FIELD_3_4)
+            robot_able_to_shoot = 1;
+
+        if (robot_able_to_shoot)
+            continue;
         for (int i = 0; i <= X_FIELD; i += stepSize)
         {
             for (int j = 0; j <= Y_FIELD; j += stepSize)
             {
                 total_possible_points++;
+
                 // Current position
                 float x_curr = i;
                 float y_curr = j;
 
-                // Calculate attractive force
-                float f_x_attr, f_y_attr;
-                attractive_force.Update(x_curr, y_curr, friend_pose.x, friend_pose.y, maxVel, f_x_attr, f_y_attr);
-
-                f_attr_x.at<float>(i, j) = f_x_attr;
-                f_attr_y.at<float>(i, j) = f_y_attr;
-
-                // Calculate repulsive force from each obstacle
-                float f_x_rep_total = 0, f_y_rep_total = 0;
-
-                for (const auto &obstacle : obstacles)
-                {
-                    circle(main_frame, obstacle, 10, Scalar(0, 0, 255), -1); // Draw obstacles
-                }
-                circle(main_frame, ball, 10, CV_BLUE, -1); // Draw ball with updated position
-
-                // logger_instance.Log(logger::YELLOW, "X %f Y %f IsOutsideRobotMaxRadius: %f", x_curr, y_curr, sqrt(pow(x_curr - robot_pose.x, 2) + pow(y_curr - robot_pose.y, 2)));
                 if (IsOutsideRobotMaxRadius(x_curr, y_curr))
                     continue;
 
@@ -85,6 +80,18 @@ int main()
                     continue;
                 if (robot_pose.x <= X_FIELD_1_4 && x_curr <= X_FIELD_1_4)
                     continue;
+
+                // Calculate attractive force
+                float f_x_attr, f_y_attr;
+                attractive_force.Update(x_curr, y_curr, goal_pose.x, goal_pose.y, maxVel, f_x_attr, f_y_attr);
+
+                f_attr_x.at<float>(i, j) = f_x_attr;
+                f_attr_y.at<float>(i, j) = f_y_attr;
+
+                // Calculate repulsive force from each obstacle
+                float f_x_rep_total = 0, f_y_rep_total = 0;
+
+                // logger_instance.Log(logger::YELLOW, "X %f Y %f IsOutsideRobotMaxRadius: %f", x_curr, y_curr, sqrt(pow(x_curr - robot_pose.x, 2) + pow(y_curr - robot_pose.y, 2)));
 
                 uint8_t is_in_obstacle_zone = 0;
                 for (const auto &obstacle : obstacles)
@@ -138,13 +145,13 @@ int main()
         line(main_frame, Point2d(robot_pose.x, robot_pose.y), Point2d(least_force_x_idx, least_force_y_idx), CV_WHITE, 1);
 
         // text on top
-        putText(main_frame, "Current position: " + to_string(robot_pose.x) + ", " + to_string(robot_pose.y), Point(10, 20), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
-        putText(main_frame, "Friend position: " + to_string(friend_pose.x) + ", " + to_string(friend_pose.y), Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
-        putText(main_frame, "Pass point: " + to_string(least_force_x_idx) + ", " + to_string(least_force_y_idx), Point(10, 60), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
-        if (!least_force_x_idx && !least_force_y_idx)
-            putText(main_frame, "CAN`T PAST", Point(500, 20), FONT_HERSHEY_SIMPLEX, 0.5, CV_RED, 1);
-        else
-            putText(main_frame, "ABLE TO PASS", Point(500, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
+        putText(main_frame, "Current position: " + to_string(robot_pose.x) + ", " + to_string(robot_pose.y), Point(200, 20), FONT_HERSHEY_SIMPLEX, 1, CV_RED, 1);
+        putText(main_frame, "Friend position: " + to_string(friend_pose.x) + ", " + to_string(friend_pose.y), Point(200, 60), FONT_HERSHEY_SIMPLEX, 1, CV_RED, 1);
+        putText(main_frame, "Target point: " + to_string(least_force_x_idx) + ", " + to_string(least_force_y_idx), Point(200, 100), FONT_HERSHEY_SIMPLEX, 1, CV_RED, 1);
+        // if (!least_force_x_idx && !least_force_y_idx)
+        //     putText(main_frame, "CAN`T PAST", Point(500, 20), FONT_HERSHEY_SIMPLEX, 0.5, CV_RED, 1);
+        // else
+        //     putText(main_frame, "ABLE TO PASS", Point(500, 40), FONT_HERSHEY_SIMPLEX, 0.5, CV_WHITE, 1);
 
         Display();
         if (cv::waitKey(1) == 'q')
