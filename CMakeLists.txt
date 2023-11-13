@@ -22,3 +22,9 @@ target_link_libraries(machine_state ${OpenCV_LIBS})
 
 add_executable(line_circle_interception src/line_circle_interception.cpp)
 target_link_libraries(line_circle_interception ${OpenCV_LIBS})
+
+add_executable(main_game src/main_game.cpp)
+target_link_libraries(main_game ${OpenCV_LIBS})
+
+add_executable(test src/test.cpp)
+target_link_libraries(test ${OpenCV_LIBS})
