@@ -28,3 +28,6 @@ target_link_libraries(main_game ${OpenCV_LIBS})
 
 add_executable(test src/test.cpp)
 target_link_libraries(test ${OpenCV_LIBS})
+
+add_executable(static_game src/static_game.cpp)
+target_link_libraries(static_game ${OpenCV_LIBS})

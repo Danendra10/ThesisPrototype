@@ -10,47 +10,6 @@ int main()
         MainGameCallback();
     }
 
-    // // This variable will control the UI loop
-    // std::atomic<bool> finished{false};
-
-    // // This variable will hold UI tasks to be executed on the main thread
-    // std::queue<std::function<void()>> ui_tasks;
-    // std::mutex ui_tasks_mutex;
-
-    // // Set up your timer on a separate thread
-    // Timer timer([&]
-    //             {
-    //     // Enqueue a task to call Display on the main thread
-    //     std::lock_guard<std::mutex> lock(ui_tasks_mutex);
-    //     ui_tasks.push([]{ MainGameCallback(); }); },
-    //             1000 / 1000);
-
-    // // Start the timer
-    // timer.start();
-
-    // // Run the UI processing loop on the main thread
-    // while (!finished)
-    // {
-    //     std::unique_lock<std::mutex> lock(ui_tasks_mutex);
-    //     if (!ui_tasks.empty())
-    //     {
-    //         auto task = std::move(ui_tasks.front());
-    //         ui_tasks.pop();
-    //         lock.unlock();
-    //         task();
-    //     }
-    //     else
-    //     {
-    //         // If there's no UI task to execute, release the lock and allow the thread
-    //         // to sleep for a short duration to prevent busy waiting
-    //         lock.unlock();
-    //         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    //     }
-    // }
-
-    // // Clean up and stop the timer before exiting the program
-    // timer.stop();
-
     return 0;
 }
 
