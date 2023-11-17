@@ -73,9 +73,6 @@ void MainGameCallback()
     DrawOurRobot();
     DrawBall();
 
-    // logger_instance.Log(logger::RED, "%f", sqrt(pow(robot[0].pose_x - robot[0].last_pose_x, 2) + pow(robot[0].pose_y - robot[0].last_pose_y, 2)));
-    // logger_instance.Log(logger::GREEN, "X: %f, Y: %f || Vel X: %f, Y: %f", robot[0].pose_x, robot[0].pose_y, robot_vel.x, robot_vel.y);
-
     Display();
 }
 

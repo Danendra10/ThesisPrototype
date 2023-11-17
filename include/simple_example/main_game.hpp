@@ -440,10 +440,6 @@ void CheckRobotHoldingBall()
             robot[i].is_holding_ball = 1;
             break; // Assuming only one robot can handle the ball at a time
         }
-        // else
-        // {
-        //     robot[i].is_holding_ball = 0;
-        // }
     }
 
     // If no robot is handling the ball, check each enemy

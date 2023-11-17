@@ -31,3 +31,9 @@ target_link_libraries(test ${OpenCV_LIBS})
 
 add_executable(static_game src/static_game.cpp)
 target_link_libraries(static_game ${OpenCV_LIBS})
+
+add_executable(convert_matlab_to_cpp src/final/convert_matlab_to_cpp.cpp)
+target_link_libraries(convert_matlab_to_cpp ${OpenCV_LIBS})
+
+add_executable(attack_single src/final/attack_single.cpp)
+target_link_libraries(attack_single ${OpenCV_LIBS})
