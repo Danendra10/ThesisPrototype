@@ -62,13 +62,13 @@ MachineState sub_state;
 int8_t num_robot_handling_ball = -1;
 int8_t num_enemy_handling_ball = -1;
 
-int x_enemy_1 = X_FIELD_3_4 - 100;
-int y_enemy_1 = Y_FIELD_1_4 + 100;
+int x_enemy_1 = X_FIELD_1_2;
+int y_enemy_1 = Y_FIELD_1_2;
 int x_enemy_2 = X_FIELD_3_4 + 100;
 int y_enemy_2 = Y_FIELD_3_4 - 100;
 
 RobotEntity robot[2] = {
-    RobotEntity(1, X_FIELD_1_2, Y_FIELD_1_2, 0),
+    RobotEntity(1, X_FIELD_1_4, Y_FIELD_1_2, 0),
     RobotEntity(1, X_FIELD_1_4, Y_FIELD_3_4, 0)};
 
 RobotEntity enemy[2] = {

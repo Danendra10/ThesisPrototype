@@ -1,0 +1,77 @@
+Date : 2023-11-18 19:46:43
+Directory : /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample
+Total : 37 files,  14280 codes, 712 comments, 1579 blanks, all 16571 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| Log      |          1 |      7,588 |          0 |          1 |      7,589 |
+| C++      |         35 |      6,670 |        710 |      1,577 |      8,957 |
+| YAML     |          1 |         22 |          2 |          1 |         25 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++---------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                          | files      | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                             |         37 |     14,280 |        712 |      1,579 |     16,571 |
+| .trunk                                                                                                        |          1 |         22 |          2 |          1 |         25 |
+| include                                                                                                       |         23 |      4,804 |        445 |      1,109 |      6,358 |
+| include/Strategy                                                                                              |          2 |        175 |         20 |         31 |        226 |
+| include/logger                                                                                                |          1 |         84 |          3 |         19 |        106 |
+| include/math                                                                                                  |          4 |        126 |         11 |         29 |        166 |
+| include/matplotlib                                                                                            |          1 |      2,505 |        137 |        645 |      3,287 |
+| include/simple_example                                                                                        |         10 |      1,429 |        213 |        307 |      1,949 |
+| include/simple_example (Files)                                                                                |          6 |        791 |        113 |        191 |      1,095 |
+| include/simple_example/final                                                                                  |          4 |        638 |        100 |        116 |        854 |
+| include/utils                                                                                                 |          5 |        485 |         61 |         78 |        624 |
+| log                                                                                                           |          1 |      7,588 |          0 |          1 |      7,589 |
+| src                                                                                                           |         12 |      1,866 |        265 |        468 |      2,599 |
+| src (Files)                                                                                                   |          7 |        899 |        107 |        214 |      1,220 |
+| src/final                                                                                                     |          5 |        967 |        158 |        254 |      1,379 |
++---------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++---------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                                                      | language | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/.trunk/trunk.yaml                              | YAML     |         22 |          2 |          1 |         25 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/Strategy/decide_position.hpp           | C++      |         46 |          3 |          8 |         57 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/Strategy/shoot_at_goal.hpp             | C++      |        129 |         17 |         23 |        169 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/logger/logger.hpp                      | C++      |         84 |          3 |         19 |        106 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/math/new_vec_attr.hpp                  | C++      |         13 |          0 |          5 |         18 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/math/new_vec_repl.hpp                  | C++      |         10 |          1 |          2 |         13 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/math/vec_attr.hpp                      | C++      |         62 |          4 |         11 |         77 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/math/vec_repl.hpp                      | C++      |         41 |          6 |         11 |         58 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/matplotlib/matplotlibcpp.h             | C++      |      2,505 |        137 |        645 |      3,287 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/simple_example/final/attack_double.hpp | C++      |        160 |         25 |         29 |        214 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/simple_example/final/attack_single.hpp | C++      |        154 |         25 |         28 |        207 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/simple_example/final/defend_single.hpp | C++      |        164 |         25 |         30 |        219 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/simple_example/final/robot_motion.hpp  | C++      |        160 |         25 |         29 |        214 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/simple_example/game_algorithm.hpp      | C++      |         90 |          1 |         22 |        113 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/simple_example/machine_state.hpp       | C++      |         45 |          0 |          8 |         53 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/simple_example/main.hpp                | C++      |         57 |          4 |         20 |         81 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/simple_example/main_game.hpp           | C++      |        347 |         63 |         80 |        490 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/simple_example/positioning.hpp         | C++      |         74 |          4 |         22 |        100 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/simple_example/static_game.hpp         | C++      |        178 |         41 |         39 |        258 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/utils/entity.hpp                       | C++      |        118 |         27 |         18 |        163 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/utils/pid.h                            | C++      |         67 |          0 |         14 |         81 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/utils/timer.hpp                        | C++      |         65 |          2 |         10 |         77 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/utils/track_keyboard.hpp               | C++      |        161 |         10 |         16 |        187 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/include/utils/utils.hpp                        | C++      |         74 |         22 |         20 |        116 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/log/logger.log                                 | Log      |      7,588 |          0 |          1 |      7,589 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/final/attack_double.cpp                    | C++      |        220 |         36 |         59 |        315 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/final/attack_single.cpp                    | C++      |        181 |         29 |         50 |        260 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/final/convert_matlab_to_cpp.cpp            | C++      |         88 |          2 |         21 |        111 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/final/defend_single.cpp                    | C++      |        263 |         43 |         64 |        370 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/final/robot_motion.cpp                     | C++      |        215 |         48 |         60 |        323 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/line_circle_interception.cpp               | C++      |         67 |         16 |         23 |        106 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/machine_state.cpp                          | C++      |        298 |         27 |         59 |        384 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/main.cpp                                   | C++      |        165 |         21 |         40 |        226 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/main_game.cpp                              | C++      |        147 |         11 |         29 |        187 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/positioning.cpp                            | C++      |        168 |         27 |         43 |        238 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/static_game.cpp                            | C++      |         37 |          3 |         12 |         52 |
+| /Users/danendracleveroananda/Documents/Kuliah/TA/SimpleExample/src/test.cpp                                   | C++      |         17 |          2 |          8 |         27 |
+| Total                                                                                                         |          |     14,280 |        712 |      1,579 |     16,571 |
++---------------------------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+

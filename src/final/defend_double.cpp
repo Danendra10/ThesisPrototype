@@ -1,4 +1,4 @@
-#include <simple_example/final/defend_single.hpp>
+#include <simple_example/final/defend_double.hpp>
 
 /**
  * KEEP IN MIND THAT THE X AND Y AXIS ARE INVERTED

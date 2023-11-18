@@ -1,5 +1,5 @@
-#ifndef DEFEND_SINGLE_HPP_
-#define DEFEND_SINGLE_HPP_
+#ifndef DEFEND_DOUBLE_HPP_
+#define DEFEND_DOUBLE_HPP_
 
 #define X_FIELD 1300
 #define Y_FIELD 900
