@@ -36,6 +36,12 @@ void OnTrackbarCallback(int, void *)
     assist_vec_movement_points.clear();
     attacker_vec_movement_points.clear();
 
+    robot[0].pose_x = X_FIELD_1_4;
+    robot[0].pose_y = Y_FIELD_1_4;
+
+    robot[1].pose_x = X_FIELD_1_4;
+    robot[1].pose_y = Y_FIELD_3_4;
+
     attacker_movement_points.x = robot[0].pose_x;
     attacker_movement_points.y = robot[0].pose_y;
 
@@ -61,6 +67,19 @@ void DrawCriticalPoints()
     }
 }
 
+void DrawTrajectory()
+{
+    for (int i = 0; i < attacker_vec_movement_points.size(); i++)
+    {
+        circle(main_frame, Point(attacker_vec_movement_points[i].x, attacker_vec_movement_points[i].y), 5, CV_BLACK, -1, 8, 0);
+    }
+
+    for (int i = 0; i < assist_vec_movement_points.size(); i++)
+    {
+        circle(main_frame, Point(assist_vec_movement_points[i].x, assist_vec_movement_points[i].y), 5, CV_BLACK, -1, 8, 0);
+    }
+}
+
 void MainGameCallback()
 {
     // ClearFrame();
@@ -69,12 +88,8 @@ void MainGameCallback()
     MainAlgorithm();
     if (!robot[0].is_holding_ball)
         CountDesiredVel(0);
-
-    for (int i = 0; i < attacker_vec_movement_points.size(); i++)
-    {
-        circle(main_frame, Point(attacker_vec_movement_points[i].x, attacker_vec_movement_points[i].y), 5, CV_BLACK, -1, 8, 0);
-    }
-
+    CountDesiredVel(1);
+    DrawTrajectory();
     DrawOurRobot();
     DrawBall();
 
@@ -89,15 +104,16 @@ void MainGameCallback()
 void MainAlgorithm()
 {
     // robot dist to ball
-    float robot_dist_to_ball = sqrt(pow(robot[0].pose_x - ball.pose_x, 2) + pow(robot[0].pose_y - ball.pose_y, 2));
+    float robot_dist_to_ball = sqrt(pow(robot[1].pose_x - ball.pose_x, 2) + pow(robot[1].pose_y - ball.pose_y, 2));
     // angle error to ball
     float angle_error = atan2(ball.pose_y - robot[0].pose_y, ball.pose_x - robot[0].pose_x);
-
+    attacker_robot_target.x = ball.pose_x;
+    attacker_robot_target.y = ball.pose_y;
     // logger_instance.Log(logger::BLUE, "Angle error: %f", angle_error);
-    if (robot_dist_to_ball <= 300 && !robot[0].is_holding_ball && fabs(angle_error) <= 5)
+    if (robot_dist_to_ball <= 300 && !robot[1].is_holding_ball && fabs(angle_error) <= 5)
     {
-        attacker_robot_target.x = ball.pose_x;
-        attacker_robot_target.y = ball.pose_y;
+        assist_robot_target.x = ball.pose_x;
+        assist_robot_target.y = ball.pose_y;
         return;
     }
     else
@@ -107,8 +123,8 @@ void MainAlgorithm()
         circle(main_frame, critical_points[1], 10, CV_RED, -1);
         line(main_frame, critical_points[1], Point2f(ball.pose_x, ball.pose_y), CV_RED, 3);
         Point2f center_critical_2_to_ball = (critical_points[1] + Point2f(ball.pose_x, ball.pose_y)) / 2;
-        attacker_robot_target.x = critical_points[0].x;
-        attacker_robot_target.y = center_critical_2_to_ball.y;
+        assist_robot_target.x = critical_points[0].x;
+        assist_robot_target.y = center_critical_2_to_ball.y;
         circle(main_frame, center_critical_2_to_ball, 10, CV_BLUE, -1);
     }
     else
@@ -116,8 +132,8 @@ void MainAlgorithm()
         circle(main_frame, critical_points[0], 10, CV_RED, -1);
         line(main_frame, critical_points[0], Point2f(ball.pose_x, ball.pose_y), CV_RED, 3);
         Point2f center_critical_1_to_ball = (critical_points[0] + Point2f(ball.pose_x, ball.pose_y)) / 2;
-        attacker_robot_target.x = critical_points[0].x;
-        attacker_robot_target.y = center_critical_1_to_ball.y;
+        assist_robot_target.x = critical_points[0].x;
+        assist_robot_target.y = center_critical_1_to_ball.y;
         circle(main_frame, center_critical_1_to_ball, 10, CV_BLUE, -1);
     }
     // CountDesiredVel(1);
@@ -150,6 +166,11 @@ void CountDesiredVel(uint8_t robot_num)
         f_y_rep_total += f_y_rep * -1;
     }
 
+    float f_x_rep, f_y_rep;
+    RepulsiveForce(curr_pose_x, friend_pose_x, curr_pose_y, friend_pose_y, Krepl, d0, f_x_rep, f_y_rep);
+    f_x_rep_total += f_x_rep * -1;
+    f_y_rep_total += f_y_rep * -1;
+
     float f_x_total = -f_x_attr + f_x_rep_total;
     float f_y_total = -f_y_attr + f_y_rep_total;
 
@@ -165,8 +186,10 @@ void CountDesiredVel(uint8_t robot_num)
     {
         for (int i = 0; i < assist_vec_movement_points.size(); i++)
         {
-
-            circle(main_frame, Point(assist_vec_movement_points[i].x, assist_vec_movement_points[i].y), 5, CV_BLACK, -1, 8, 0);
+            robot[1].pose_x = assist_vec_movement_points[i].x;
+            robot[1].pose_y = assist_vec_movement_points[i].y;
+            // pose_th should be angle from curr position to ball position
+            robot[1].pose_th = atan2(ball.pose_y - robot[1].pose_y, ball.pose_x - robot[1].pose_x) * RAD2DEG;
         }
     }
     else
@@ -177,8 +200,6 @@ void CountDesiredVel(uint8_t robot_num)
             robot[0].pose_y = attacker_vec_movement_points[i].y;
             // pose_th should be angle from curr position to ball position
             robot[0].pose_th = atan2(ball.pose_y - robot[0].pose_y, ball.pose_x - robot[0].pose_x) * RAD2DEG;
-
-            circle(main_frame, Point(attacker_vec_movement_points[i].x, attacker_vec_movement_points[i].y), 5, CV_BLACK, -1, 8, 0);
         }
     }
 }
@@ -336,7 +357,7 @@ void DrawField()
 void DrawOurRobot()
 {
     DrawRobot(robot[0].pose_x, robot[0].pose_y, robot[0].pose_th, CV_MAGENTA);
-    // DrawRobot(robot[1].pose_x, robot[1].pose_y, robot[1].pose_th, CV_MAGENTA);
+    DrawRobot(robot[1].pose_x, robot[1].pose_y, robot[1].pose_th, CV_MAGENTA);
 
     DrawRobot(enemy[0].pose_x, enemy[0].pose_y, enemy[0].pose_th, CV_BLACK);
     DrawRobot(enemy[1].pose_x, enemy[1].pose_y, enemy[1].pose_th, CV_BLACK);

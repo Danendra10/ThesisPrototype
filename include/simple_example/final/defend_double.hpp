@@ -61,11 +61,12 @@ MachineState sub_state;
 
 int8_t num_robot_handling_ball = -1;
 int8_t num_enemy_handling_ball = -1;
+uint8_t num_robot_att = 0;
 
-int x_enemy_1 = 424;
-int y_enemy_1 = 760;
-int x_enemy_2 = X_FIELD_3_4 + 100;
-int y_enemy_2 = Y_FIELD_3_4 - 100;
+int x_enemy_1 = X_FIELD_3_4;
+int y_enemy_1 = Y_FIELD_1_4;
+int x_enemy_2 = X_FIELD_3_4;
+int y_enemy_2 = Y_FIELD_3_4;
 
 vector<Point2f> critical_points = {
     Point2f(X_FIELD_1_4, Y_FIELD_1_4),
@@ -73,14 +74,14 @@ vector<Point2f> critical_points = {
 };
 
 RobotEntity robot[2] = {
-    RobotEntity(1, X_FIELD_1_4, Y_FIELD_1_2, 0),
+    RobotEntity(1, X_FIELD_1_4, Y_FIELD_1_4, 0),
     RobotEntity(1, X_FIELD_1_4, Y_FIELD_3_4, 0)};
 
 RobotEntity enemy[2] = {
     RobotEntity(0, x_enemy_1, y_enemy_1, -180),
     RobotEntity(0, x_enemy_2, y_enemy_2, -180)};
 
-BallEntity ball = {424, 760};
+BallEntity ball = {X_FIELD_3_4, Y_FIELD_1_4};
 
 Point2f goal_pose(X_FIELD - 50, Y_FIELD_1_2);
 

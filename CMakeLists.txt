@@ -46,3 +46,6 @@ target_link_libraries(robot_motion ${OpenCV_LIBS})
 
 add_executable(defend_single src/final/defend_single.cpp)
 target_link_libraries(defend_single ${OpenCV_LIBS})
+
+add_executable(defend_double src/final/defend_double.cpp)
+target_link_libraries(defend_double ${OpenCV_LIBS})
