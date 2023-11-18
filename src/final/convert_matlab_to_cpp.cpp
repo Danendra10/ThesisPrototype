@@ -28,7 +28,9 @@ cv::Mat NewAttractiveForce(const cv::Mat &q, const cv::Mat &qd, double Katt, dou
     cv::Mat d_d_dq = (q - qd) / dist_to_goal;
     cv::Mat d_sigma_dq = d_sigma_dd * d_d_dq;
 
-    cv::Mat grad_Uattr_q = Katt * c * 2 * (q - qd) * (1 - blend) / (a * a) + d_sigma_dq * (linear_slope * (dist_to_goal - rad_thr) * U_trans) + blend * linear_slope * d_d_dq * U_trans;
+    cv::Mat grad_Uattr_q = Katt * c * 2 * (q - qd) * (1 - blend) / (a * a) +
+                           d_sigma_dq * (linear_slope * (dist_to_goal - rad_thr) * U_trans) +
+                           blend * linear_slope * d_d_dq * U_trans;
 
     return -grad_Uattr_q;
 }

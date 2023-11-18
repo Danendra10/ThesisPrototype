@@ -1,5 +1,4 @@
 #include <cmath>
-#include <cstdio>
 void RepulsiveForce(float q1, float qd1, float q2, float qd2, float k_rep,
                     float d_thresh, float &grad_q1, float &grad_q2)
 {

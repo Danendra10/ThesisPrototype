@@ -37,3 +37,12 @@ target_link_libraries(convert_matlab_to_cpp ${OpenCV_LIBS})
 
 add_executable(attack_single src/final/attack_single.cpp)
 target_link_libraries(attack_single ${OpenCV_LIBS})
+
+add_executable(attack_double src/final/attack_double.cpp)
+target_link_libraries(attack_double ${OpenCV_LIBS})
+
+add_executable(robot_motion src/final/robot_motion.cpp)
+target_link_libraries(robot_motion ${OpenCV_LIBS})
+
+add_executable(defend_single src/final/defend_single.cpp)
+target_link_libraries(defend_single ${OpenCV_LIBS})
