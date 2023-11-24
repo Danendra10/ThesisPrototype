@@ -1,37 +1,41 @@
 #include <simple_example/final/defend_single.hpp>
 
-/**
- * KEEP IN MIND THAT THE X AND Y AXIS ARE INVERTED
- */
-
-void OnTrackbarCallback(int, void *);
 int main()
 {
-    // make a slider
-
-    cv::namedWindow("Slider");
-    cv::createTrackbar("X enemy 1", "Slider", &x_enemy_1, X_FIELD, OnTrackbarCallback);
-    cv::createTrackbar("Y enemy 1", "Slider", &y_enemy_1, Y_FIELD, OnTrackbarCallback);
-    cv::createTrackbar("X enemy 2", "Slider", &x_enemy_2, X_FIELD, OnTrackbarCallback);
-    cv::createTrackbar("Y enemy 2", "Slider", &y_enemy_2, Y_FIELD, OnTrackbarCallback);
+    namedWindow("Data Frame");
     while (true)
     {
         MainGameCallback();
+
+        auto end = steady_clock::now();
+
+        // Cast the duration to floating-point milliseconds
+        duration<float, milli> time_diff_ms = end - start;
+
+        // write the time difference to the DataFrame
+        Mat frame = Mat(500, 500, CV_8UC3, Scalar(255, 255, 255));
+        putText(frame, "Time taken: " + to_string(time_diff_ms.count()), Point(10, 50), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 0), 2, LINE_AA);
+
+        // printf("portential vec size: %lu\n", potential_force_vect.size());
+        imshow("Data Frame", frame);
+
+        // Use %f to print floating-point values
+        logger_instance.Log(logger::YELLOW, "Time taken: %.3f ms", time_diff_ms.count());
     }
 }
 
 void OnTrackbarCallback(int, void *)
 {
+    start = steady_clock::now();
+    trackbarChanged = true;
+
     enemy[0].pose_x = x_enemy_1;
     enemy[0].pose_y = y_enemy_1;
     enemy[1].pose_x = x_enemy_2;
     enemy[1].pose_y = y_enemy_2;
-    num_robot_handling_ball = -1;
-    num_enemy_handling_ball = 0;
-    robot[0].is_holding_ball = false;
-    robot[1].is_holding_ball = false;
 
-    enemy[0].is_holding_ball = true;
+    robot[0].pose_x = X_FIELD_1_4;
+    robot[0].pose_y = Y_FIELD_1_2;
 
     assist_vec_movement_points.clear();
     attacker_vec_movement_points.clear();
@@ -43,328 +47,80 @@ void OnTrackbarCallback(int, void *)
     assist_movement_points.y = robot[1].pose_y;
 }
 
-void DrawCriticalPoints()
-{
-    if (ball.pose_y <= Y_FIELD_1_2)
-    {
-        circle(main_frame, critical_points[1], 10, CV_RED, -1);
-        line(main_frame, critical_points[1], Point2f(ball.pose_x, ball.pose_y), CV_RED, 3);
-        Point2f center_critical_2_to_ball = (critical_points[1] + Point2f(ball.pose_x, ball.pose_y)) / 2;
-        circle(main_frame, center_critical_2_to_ball, 10, CV_BLUE, -1);
-    }
-    else
-    {
-        circle(main_frame, critical_points[0], 10, CV_RED, -1);
-        line(main_frame, critical_points[0], Point2f(ball.pose_x, ball.pose_y), CV_RED, 3);
-        Point2f center_critical_1_to_ball = (critical_points[0] + Point2f(ball.pose_x, ball.pose_y)) / 2;
-        circle(main_frame, center_critical_1_to_ball, 10, CV_BLUE, -1);
-    }
-}
-
 void MainGameCallback()
 {
-    // ClearFrame();
     DrawField();
 
     MainAlgorithm();
-    if (!robot[0].is_holding_ball)
-        CountDesiredVel(0);
-
-    for (int i = 0; i < attacker_vec_movement_points.size(); i++)
-    {
-        circle(main_frame, Point(attacker_vec_movement_points[i].x, attacker_vec_movement_points[i].y), 5, CV_BLACK, -1, 8, 0);
-    }
-
     DrawOurRobot();
     DrawBall();
+    DrawTarget();
 
     CheckRobotHoldingBall();
     UpdateBallPosWhenHeld();
 
-    DrawCriticalPoints();
-
+    for (size_t i = 0; i < attacker_vec_movement_points.size(); i++)
+    {
+        circle(main_frame, Point(attacker_vec_movement_points[i].x, attacker_vec_movement_points[i].y), 5, CV_BLACK, -1, 8, 0);
+    }
     Display();
+    if (robot[0].is_holding_ball)
+        waitKey(0);
+    else
+    {
+        if (waitKey(1) == 'q')
+        {
+            exit(0);
+        }
+    }
 }
 
 void MainAlgorithm()
 {
-    // robot dist to ball
-    float robot_dist_to_ball = sqrt(pow(robot[0].pose_x - ball.pose_x, 2) + pow(robot[0].pose_y - ball.pose_y, 2));
-    // angle error to ball
-    float angle_error = atan2(ball.pose_y - robot[0].pose_y, ball.pose_x - robot[0].pose_x);
-
-    // logger_instance.Log(logger::BLUE, "Angle error: %f", angle_error);
-    if (robot_dist_to_ball <= 300 && !robot[0].is_holding_ball && fabs(angle_error) <= 5)
+    if (robot[0].is_holding_ball)
     {
-        attacker_robot_target.x = ball.pose_x;
-        attacker_robot_target.y = ball.pose_y;
-        return;
-    }
-    else
-        logger_instance.Log(logger::GREEN, "Ball Pos: %f %f || Enemy pos: %f %f || Robot dist: %f || Angle error: %f", ball.pose_x, ball.pose_y, enemy[0].pose_x, enemy[0].pose_y, robot_dist_to_ball, angle_error);
-    if (ball.pose_y <= Y_FIELD_1_2)
-    {
-        circle(main_frame, critical_points[1], 10, CV_RED, -1);
-        line(main_frame, critical_points[1], Point2f(ball.pose_x, ball.pose_y), CV_RED, 3);
-        Point2f center_critical_2_to_ball = (critical_points[1] + Point2f(ball.pose_x, ball.pose_y)) / 2;
-        attacker_robot_target.x = critical_points[0].x;
-        attacker_robot_target.y = center_critical_2_to_ball.y;
-        circle(main_frame, center_critical_2_to_ball, 10, CV_BLUE, -1);
+        robot_target_x = X_FIELD;
+        robot_target_y = Y_FIELD_1_2;
     }
     else
     {
-        circle(main_frame, critical_points[0], 10, CV_RED, -1);
-        line(main_frame, critical_points[0], Point2f(ball.pose_x, ball.pose_y), CV_RED, 3);
-        Point2f center_critical_1_to_ball = (critical_points[0] + Point2f(ball.pose_x, ball.pose_y)) / 2;
-        attacker_robot_target.x = critical_points[0].x;
-        attacker_robot_target.y = center_critical_1_to_ball.y;
-        circle(main_frame, center_critical_1_to_ball, 10, CV_BLUE, -1);
+        robot_target_x = ball.pose_x;
+        robot_target_y = ball.pose_y;
     }
-    // CountDesiredVel(1);
-}
+    float f_attr_x;
+    float f_attr_y;
+    static PID_t angles_pid;
+    PIDInit(&angles_pid, 3.2, 0, 0);
+    float angle_error = atan2(robot_target_y - robot[0].pose_y, robot_target_x - robot[0].pose_x) * RAD2DEG - robot[0].pose_th;
+    AttractiveForce(robot[0].pose_x, robot_target_x, robot[0].pose_y, robot_target_y, 2, 50, 100, f_attr_x, f_attr_y);
+    f_attr_x = (f_attr_x / 200) * 5;
+    f_attr_y = (f_attr_y / 200) * 5;
 
-void CountDesiredVel(uint8_t robot_num)
-{
-    float curr_pose_x = (robot_num ? assist_movement_points.x : attacker_movement_points.x);
-    float curr_pose_y = (robot_num ? assist_movement_points.y : attacker_movement_points.y);
-    float friend_pose_x = (robot_num ? attacker_movement_points.x : assist_movement_points.x);
-    float friend_pose_y = (robot_num ? attacker_movement_points.y : assist_movement_points.y);
-    float target_x = (robot_num ? assist_robot_target.x : attacker_robot_target.x);
-    float target_y = (robot_num ? assist_robot_target.y : attacker_robot_target.y);
-
-    float f_x_attr, f_y_attr;
-    AttractiveForce(curr_pose_x, target_x, curr_pose_y, target_y, Kattr, a, b, c, linear_slope, rad_thr, u_trans, f_x_attr, f_y_attr);
-    // normalize fx and fy from -200 to 200 to -5 to 5
-    f_x_attr = (f_x_attr / 200) * 5;
-    f_y_attr = (f_y_attr / 200) * 5;
     float f_x_rep_total = 0, f_y_rep_total = 0;
 
-    for (uint8_t i = 0; i < 2; i++)
+    for (size_t i = 0; i < sizeof(enemy) / sizeof(enemy[0]); i++)
     {
-        // condition where the ball is near obs
-        if (sqrt(pow(enemy[i].pose_x - ball.pose_x, 2) + pow(enemy[i].pose_y - ball.pose_y, 2)) < 100)
+        if (sqrt(pow(enemy[i].pose_x - ball.pose_x, 2) + pow(enemy[i].pose_y - ball.pose_y, 2)) < 50)
             continue;
-        float f_x_rep, f_y_rep;
-        RepulsiveForce(curr_pose_x, enemy[i].pose_x, curr_pose_y, enemy[i].pose_y, Krepl, d0, f_x_rep, f_y_rep);
-        f_x_rep_total += f_x_rep * -1;
-        f_y_rep_total += f_y_rep * -1;
+        float f_rep_x;
+        float f_rep_y;
+        RepulsiveForce(robot[0].pose_x, enemy[i].pose_x, robot[0].pose_y, enemy[i].pose_y, 100000000, 400, f_rep_x, f_rep_y);
+        f_x_rep_total += f_rep_x * -1;
+        f_y_rep_total += f_rep_y * -1;
     }
 
-    float f_x_total = -f_x_attr + f_x_rep_total;
-    float f_y_total = -f_y_attr + f_y_rep_total;
+    float f_x_total = -f_attr_x + f_x_rep_total;
+    float f_y_total = -f_attr_y + f_y_rep_total;
+    float vel_th = PIDCalculate(&angles_pid, angle_error, 10);
 
-    (robot_num ? assist_robot_vel.x = f_x_total : attacker_robot_vel.x = f_x_total);
-    (robot_num ? assist_robot_vel.y = f_y_total : attacker_robot_vel.y = f_y_total);
+    robot[0].pose_x += f_x_total;
+    robot[0].pose_y += f_y_total;
+    robot[0].pose_th += vel_th;
 
-    (robot_num ? assist_movement_points.x += assist_robot_vel.x : attacker_movement_points.x += attacker_robot_vel.x);
-    (robot_num ? assist_movement_points.y += assist_robot_vel.y : attacker_movement_points.y += attacker_robot_vel.y);
+    logger_instance.Log(logger::RED, "Robot Position: %f %f || target: %d %d", robot[0].pose_x, robot[0].pose_y, robot_target_x, robot_target_y);
 
-    (robot_num ? assist_vec_movement_points.push_back(assist_movement_points) : attacker_vec_movement_points.push_back(attacker_movement_points));
+    attacker_movement_points.x = robot[0].pose_x;
+    attacker_movement_points.y = robot[0].pose_y;
 
-    if (robot_num)
-    {
-        for (int i = 0; i < assist_vec_movement_points.size(); i++)
-        {
-
-            circle(main_frame, Point(assist_vec_movement_points[i].x, assist_vec_movement_points[i].y), 5, CV_BLACK, -1, 8, 0);
-        }
-    }
-    else
-    {
-        for (int i = 0; i < attacker_vec_movement_points.size(); i++)
-        {
-            robot[0].pose_x = attacker_vec_movement_points[i].x;
-            robot[0].pose_y = attacker_vec_movement_points[i].y;
-            // pose_th should be angle from curr position to ball position
-            robot[0].pose_th = atan2(ball.pose_y - robot[0].pose_y, ball.pose_x - robot[0].pose_x) * RAD2DEG;
-
-            circle(main_frame, Point(attacker_vec_movement_points[i].x, attacker_vec_movement_points[i].y), 5, CV_BLACK, -1, 8, 0);
-        }
-    }
-}
-
-void CountRobotTarget(uint8_t robot_num, float &target_x, float &target_y)
-{
-    uint8_t robot_able_to_shoot = 0;
-
-    if (robot[0].pose_x >= X_FIELD_3_4)
-        robot_able_to_shoot = 1;
-
-    if (robot_able_to_shoot)
-        return;
-
-    float least_force_x = __FLT_MAX__;
-    float least_force_y = __FLT_MAX__;
-    float least_force_x_idx = __FLT_MAX__;
-    float least_force_y_idx = __FLT_MAX__;
-
-    Point2f midpoint = MidPointTriangle(goal_pose.x, goal_pose.y, X_FIELD_1_2, Y_FIELD - 50, X_FIELD_1_2, 50);
-
-    // Draw triangle
-    // line(main_frame, Point(X_FIELD_1_2, Y_FIELD - 50), Point(X_FIELD_1_2, 50), CV_BLACK, 2, 8, 0);
-    // line(main_frame, Point(goal_pose.x, goal_pose.y), Point(X_FIELD_1_2, Y_FIELD - 50), CV_BLACK, 2, 8, 0);
-    // line(main_frame, Point(goal_pose.x, goal_pose.y), Point(X_FIELD_1_2, 50), CV_BLACK, 2, 8, 0);
-
-    float curr_pose_x = (robot_num ? assist_movement_points.x : attacker_movement_points.x);
-    float curr_pose_y = (robot_num ? assist_movement_points.y : attacker_movement_points.y);
-    float friend_pose_x = (robot_num ? attacker_movement_points.x : assist_movement_points.x);
-    float friend_pose_y = (robot_num ? attacker_movement_points.y : assist_movement_points.y);
-    float x_target = (robot_num ? x_target = X_FIELD_1_2 - 100 : (!robot[0].is_holding_ball ? ball.pose_x : midpoint.x));
-    float y_target = (robot_num ? y_target = (friend_pose_y + curr_pose_y) / 2 : (!robot[0].is_holding_ball ? ball.pose_y : midpoint.y));
-
-    for (int i = 0; i <= X_FIELD; i += stepSize)
-    {
-        for (int j = 0; j <= Y_FIELD; j += stepSize)
-        {
-            // Current position
-            float x_curr = i;
-            float y_curr = j;
-
-            if (x_curr >= X_FIELD - 300 || x_curr <= 50 || y_curr >= Y_FIELD - 50 || y_curr <= 50)
-                continue;
-
-            // if (IsOutsideRobotMaxRadius(x_curr, y_curr, robot[0].pose_x, robot[0].pose_y, max_robot_movement_radius))
-            //     continue;
-
-            // if (robot[0].pose_x <= X_FIELD_3_4 && x_curr <= robot[0].pose_x)
-            //     continue;
-            // if (robot[0].pose_x <= X_FIELD_1_4 && x_curr <= X_FIELD_1_4)
-            //     continue;
-
-            // Calculate attractive force
-            float f_x_attr, f_y_attr;
-            AttractiveForce(x_curr, x_target, y_curr, y_target, Kattr, a, b, c, linear_slope, rad_thr, u_trans, f_x_attr, f_y_attr);
-
-            f_attr_x.at<float>(i, j) = f_x_attr;
-            f_attr_y.at<float>(i, j) = f_y_attr;
-
-            // Calculate repulsive force from each obstacle
-            float f_x_rep_total = 0, f_y_rep_total = 0;
-
-            // logger_instance.Log(logger::YELLOW, "X %f Y %f IsOutsideRobotMaxRadius: %f", x_curr, y_curr, sqrt(pow(x_curr - robot_pose.x, 2) + pow(y_curr - robot_pose.y, 2)));
-
-            uint8_t is_in_obstacle_zone = 0;
-            for (uint8_t i = 0; i < 2; i++)
-            {
-                float f_x_rep, f_y_rep;
-                RepulsiveForce(x_curr, enemy[i].pose_x, y_curr, enemy[i].pose_y, Krepl, d0, f_x_rep, f_y_rep);
-                f_x_rep_total += f_x_rep * -1;
-                f_y_rep_total += f_y_rep * -1;
-            }
-            // float f_x_rep, f_y_rep;
-            // RepulsiveForce(x_curr, robot[!robot_num].pose_x, y_curr, robot[!robot_num].pose_y, Krepl, d0, f_x_rep_total, f_y_rep_total);
-            // f_x_rep_total += f_x_rep * -1;
-            // f_y_rep_total += f_y_rep * -1;
-            if (is_in_obstacle_zone)
-                continue;
-
-            f_rep_x.at<float>(i, j) = f_x_rep_total;
-            f_rep_y.at<float>(i, j) = f_y_rep_total;
-
-            // Total force
-            float f_x_total = f_attr_x.at<float>(i, j) + f_rep_x.at<float>(i, j);
-            float f_y_total = f_attr_y.at<float>(i, j) + f_rep_y.at<float>(i, j);
-
-            f_total_x.at<float>(i, j) = f_x_total;
-            f_total_y.at<float>(i, j) = f_y_total;
-
-            if (abs(f_x_total) <= abs(least_force_x) && abs(f_y_total) <= abs(least_force_y) && sqrt(pow(x_curr - robot[0].pose_x, 2) + pow(y_curr - robot[0].pose_y, 2)) > max_robot_movement_radius - 100)
-            {
-                least_force_x = f_x_total;
-                least_force_x_idx = i;
-                least_force_y = f_y_total;
-                least_force_y_idx = j;
-            }
-            // logger_instance.Log(logger::RED, "Least: %f %f", f_x_total, f_y_total);
-            // line(main_frame, Point(i, j), Point(i + f_x_total, j + f_y_total), Scalar(0, 0, 255), 1);
-        }
-    }
-
-    // circle(main_frame, Point2d(least_force_x_idx, least_force_y_idx), 10, CV_MAGENTA, -1);
-    // line(main_frame, Point2d(robot[0].pose_x, robot[0].pose_y), Point2d(least_force_x_idx, least_force_y_idx), CV_MAGENTA, 5);
-
-    target_x = least_force_x_idx;
-    target_y = least_force_y_idx;
-}
-
-void ClearFrame()
-{
-    main_frame = Scalar(0);
-}
-
-void DrawField()
-{
-    const int penalty_area_width = 150;  // Assuming 100 pixels = 1 meter scale, adjust if needed
-    const int penalty_area_height = 350; // Based on your field diagram
-
-    const int goal_area_width = 50;   // As per field diagram
-    const int goal_area_height = 180; // 1.8 meters
-
-    const int penalty_spot_distance = 260; // From the goal line
-    const int corner_arc_radius = 50;      // 0.5 meters
-
-    // Calculate positions based on the field size
-    int penalty_area_top_y = (Y_FIELD / 2) - (penalty_area_height / 2);
-    int goal_area_top_y = (Y_FIELD / 2) - (goal_area_height / 2);
-
-    rectangle(main_frame, Rect(Point2i(0, 0), Point2i(X_FIELD, Y_FIELD)), CV_GREEN, -1);
-    // create outer line with distance of 50 from the outer box
-    rectangle(main_frame, Rect(Point2i(50, 50), Point2i(X_FIELD - 50, Y_FIELD - 50)), CV_WHITE, 5);
-    // center line
-    line(main_frame, Point(X_FIELD_1_2, 50), Point(X_FIELD_1_2, Y_FIELD - 50), CV_WHITE, 5);
-    // center circle
-    circle(main_frame, Point(X_FIELD_1_2, Y_FIELD_1_2), 260, CV_WHITE, 5);
-    circle(main_frame, Point(X_FIELD_1_2, Y_FIELD_1_2), 10, CV_WHITE, -1);
-    // Draw penalty and goal areas for both sides
-    rectangle(main_frame, Point(50, penalty_area_top_y), Point(50 + penalty_area_width, penalty_area_top_y + penalty_area_height), CV_WHITE, 5);
-    rectangle(main_frame, Point(X_FIELD - 50 - penalty_area_width, penalty_area_top_y), Point(X_FIELD - 50, penalty_area_top_y + penalty_area_height), CV_WHITE, 5);
-
-    rectangle(main_frame, Point(50, goal_area_top_y), Point(50 + goal_area_width, goal_area_top_y + goal_area_height), CV_WHITE, 5);
-    rectangle(main_frame, Point(X_FIELD - 50 - goal_area_width, goal_area_top_y), Point(X_FIELD - 50, goal_area_top_y + goal_area_height), CV_WHITE, 5);
-
-    // Penalty spots
-    circle(main_frame, Point(50 + penalty_spot_distance, Y_FIELD / 2), 5, CV_WHITE, -1);
-    circle(main_frame, Point(X_FIELD - 50 - penalty_spot_distance, Y_FIELD / 2), 5, CV_WHITE, -1);
-
-    // Corner arcs
-    ellipse(main_frame, Point(50, 50), Size(corner_arc_radius, corner_arc_radius), 0, 0, 90, CV_WHITE, 5);
-    ellipse(main_frame, Point(50, Y_FIELD - 50), Size(corner_arc_radius, corner_arc_radius), 180, 90, 180, CV_WHITE, 5);
-    ellipse(main_frame, Point(X_FIELD - 50, 50), Size(corner_arc_radius, corner_arc_radius), 90, 90, 0, CV_WHITE, 5);
-    ellipse(main_frame, Point(X_FIELD - 50, Y_FIELD - 50), Size(corner_arc_radius, corner_arc_radius), 0, 180, 270, CV_WHITE, 5);
-}
-
-void DrawOurRobot()
-{
-    DrawRobot(robot[0].pose_x, robot[0].pose_y, robot[0].pose_th, CV_MAGENTA);
-    // DrawRobot(robot[1].pose_x, robot[1].pose_y, robot[1].pose_th, CV_MAGENTA);
-
-    DrawRobot(enemy[0].pose_x, enemy[0].pose_y, enemy[0].pose_th, CV_BLACK);
-    DrawRobot(enemy[1].pose_x, enemy[1].pose_y, enemy[1].pose_th, CV_BLACK);
-}
-
-void DrawBall()
-{
-    float pose_x = ball.pose_x;
-    float pose_y = ball.pose_y;
-    if (num_robot_holding_ball != -1)
-    {
-        pose_x = robot[num_robot_holding_ball].pose_x + 5;
-        pose_y = robot[num_robot_holding_ball].pose_y + 5;
-    }
-    circle(main_frame, Point(pose_x, pose_y), 10, CV_YELLOW, -1);
-}
-
-void Display()
-{
-    imshow("Main", main_frame);
-    if (waitKey(1) == 'q')
-    {
-        exit(0);
-    }
-}
-
-void DrawRobot(float x_, float y_, float th_, Scalar color_)
-{
-    circle(main_frame, Point2f((x_), (y_)), 30, color_, 4);
-    line(main_frame, Point2f((x_), (y_)), Point((x_ + 35 * cos(th_ * DEG2RAD)), (y_ + 35 * sin(th_ * DEG2RAD))), color_, 3);
+    attacker_vec_movement_points.push_back(attacker_movement_points);
 }

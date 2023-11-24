@@ -42,7 +42,10 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <chrono>
+
 using namespace std;
+using namespace std::chrono;
 using namespace cv;
 
 #define CV_RED Scalar(0, 0, 255)
@@ -53,6 +56,9 @@ using namespace cv;
 #define CV_CYAN Scalar(255, 255, 0)
 #define CV_WHITE Scalar(255, 255, 255)
 #define CV_BLACK Scalar(0, 0, 0)
+
+static auto start = steady_clock::now();
+bool trackbarChanged = false;
 
 logger::Logger logger_instance;
 
@@ -67,13 +73,20 @@ int y_enemy_1 = Y_FIELD_1_4 + 100;
 int x_enemy_2 = X_FIELD_3_4 + 100;
 int y_enemy_2 = Y_FIELD_3_4 - 100;
 
+int variasi_x[] = {650, 1200, 1200, 1200};
+int variasi_y[] = {450, 800, 450, 50};
+int robot_target_x = variasi_x[0];
+int robot_target_y = variasi_y[0];
+
 RobotEntity robot[2] = {
     RobotEntity(1, X_FIELD_1_4, Y_FIELD_1_2, 0),
     RobotEntity(1, X_FIELD_1_4, Y_FIELD_3_4, 0)};
 
+float variasi_halangan_1_y[] = {Y_FIELD_1_2 - 100, Y_FIELD_1_2 - 350, Y_FIELD_1_2 + 250, Y_FIELD_1_2 - 350};
+float variasi_halangan_2_y[] = {Y_FIELD_1_2 + 100, Y_FIELD_1_2 - 250, Y_FIELD_1_2 + 350, Y_FIELD_1_2 + 350};
 RobotEntity enemy[2] = {
-    RobotEntity(0, x_enemy_1, y_enemy_1, 90),
-    RobotEntity(0, x_enemy_2, y_enemy_2, 90)};
+    RobotEntity(0, X_FIELD_1_2 + 200, variasi_halangan_1_y[0], 90),
+    RobotEntity(0, X_FIELD_1_2 + 200, variasi_halangan_2_y[0], 90)};
 
 BallEntity ball = {X_FIELD_1_2, Y_FIELD_1_2};
 
@@ -209,6 +222,92 @@ Point2f MidPointTriangle(float x1, float y1, float x2, float y2, float x3, float
     midpoint.x = (x1 + x2 + x3) / 3.0;
     midpoint.y = (y1 + y2 + y3) / 3.0;
     return midpoint;
+}
+
+void OnTrackbarCallback(int, void *);
+
+void DrawTarget()
+{
+    circle(main_frame, Point(robot_target_x, robot_target_y), 10, CV_BLACK, -1);
+}
+
+void DrawField()
+{
+    const int penalty_area_width = 150;  // Assuming 100 pixels = 1 meter scale, adjust if needed
+    const int penalty_area_height = 350; // Based on your field diagram
+
+    const int goal_area_width = 50;   // As per field diagram
+    const int goal_area_height = 180; // 1.8 meters
+
+    const int penalty_spot_distance = 260; // From the goal line
+    const int corner_arc_radius = 50;      // 0.5 meters
+
+    // Calculate positions based on the field size
+    int penalty_area_top_y = (Y_FIELD / 2) - (penalty_area_height / 2);
+    int goal_area_top_y = (Y_FIELD / 2) - (goal_area_height / 2);
+
+    rectangle(main_frame, Rect(Point2i(0, 0), Point2i(X_FIELD, Y_FIELD)), CV_GREEN, -1);
+    // create outer line with distance of 50 from the outer box
+    rectangle(main_frame, Rect(Point2i(50, 50), Point2i(X_FIELD - 50, Y_FIELD - 50)), CV_WHITE, 5);
+    // center line
+    line(main_frame, Point(X_FIELD_1_2, 50), Point(X_FIELD_1_2, Y_FIELD - 50), CV_WHITE, 5);
+    // center circle
+    circle(main_frame, Point(X_FIELD_1_2, Y_FIELD_1_2), 260, CV_WHITE, 5);
+    circle(main_frame, Point(X_FIELD_1_2, Y_FIELD_1_2), 10, CV_WHITE, -1);
+    // Draw penalty and goal areas for both sides
+    rectangle(main_frame, Point(50, penalty_area_top_y), Point(50 + penalty_area_width, penalty_area_top_y + penalty_area_height), CV_WHITE, 5);
+    rectangle(main_frame, Point(X_FIELD - 50 - penalty_area_width, penalty_area_top_y), Point(X_FIELD - 50, penalty_area_top_y + penalty_area_height), CV_WHITE, 5);
+
+    rectangle(main_frame, Point(50, goal_area_top_y), Point(50 + goal_area_width, goal_area_top_y + goal_area_height), CV_WHITE, 5);
+    rectangle(main_frame, Point(X_FIELD - 50 - goal_area_width, goal_area_top_y), Point(X_FIELD - 50, goal_area_top_y + goal_area_height), CV_WHITE, 5);
+
+    // Penalty spots
+    circle(main_frame, Point(50 + penalty_spot_distance, Y_FIELD / 2), 5, CV_WHITE, -1);
+    circle(main_frame, Point(X_FIELD - 50 - penalty_spot_distance, Y_FIELD / 2), 5, CV_WHITE, -1);
+
+    // Corner arcs
+    ellipse(main_frame, Point(50, 50), Size(corner_arc_radius, corner_arc_radius), 0, 0, 90, CV_WHITE, 5);
+    ellipse(main_frame, Point(50, Y_FIELD - 50), Size(corner_arc_radius, corner_arc_radius), 180, 90, 180, CV_WHITE, 5);
+    ellipse(main_frame, Point(X_FIELD - 50, 50), Size(corner_arc_radius, corner_arc_radius), 90, 90, 0, CV_WHITE, 5);
+    ellipse(main_frame, Point(X_FIELD - 50, Y_FIELD - 50), Size(corner_arc_radius, corner_arc_radius), 0, 180, 270, CV_WHITE, 5);
+}
+
+void DrawOurRobot()
+{
+    DrawRobot(robot[0].pose_x, robot[0].pose_y, robot[0].pose_th, CV_MAGENTA);
+    // DrawRobot(robot[1].pose_x, robot[1].pose_y, robot[1].pose_th, CV_MAGENTA);
+
+    circle(main_frame, Point(enemy[0].pose_x, enemy[0].pose_y), 20, Scalar(0, 0, 255), -1); // Draw obstacles
+    putText(main_frame, "x = " + std::to_string(enemy[0].pose_x) + " y = " + std::to_string(enemy[0].pose_y), Point(enemy[0].pose_x, enemy[0].pose_y), 1, 1, CV_WHITE);
+    circle(main_frame, Point(enemy[1].pose_x, enemy[1].pose_y), 20, Scalar(0, 0, 255), -1); // Draw obstacles
+    putText(main_frame, "x = " + std::to_string(enemy[1].pose_x) + " y = " + std::to_string(enemy[1].pose_y), Point(enemy[1].pose_x, enemy[1].pose_y), 1, 1, CV_WHITE);
+}
+
+void DrawBall()
+{
+    float pose_x = ball.pose_x;
+    float pose_y = ball.pose_y;
+    if (num_robot_holding_ball != -1)
+    {
+        pose_x = robot[num_robot_holding_ball].pose_x + 5;
+        pose_y = robot[num_robot_holding_ball].pose_y + 5;
+    }
+    circle(main_frame, Point(pose_x, pose_y), 10, CV_YELLOW, -1);
+}
+
+void Display()
+{
+    imshow("Main", main_frame);
+    if (waitKey(1) == 'q')
+    {
+        exit(0);
+    }
+}
+
+void DrawRobot(float x_, float y_, float th_, Scalar color_)
+{
+    circle(main_frame, Point2f((x_), (y_)), 30, color_, 4);
+    line(main_frame, Point2f((x_), (y_)), Point((x_ + 35 * cos(th_ * DEG2RAD)), (y_ + 35 * sin(th_ * DEG2RAD))), color_, 3);
 }
 
 #endif
